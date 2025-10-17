@@ -1,14 +1,14 @@
 const crypto = require("crypto");
 
 const hashPassword = (password) => {
-  const hashpass = crypto.createHash("md5").update(password).digest("hex");
-
-  return hashpass;
+  return crypto.createHash("md5").update(password).digest("hex");
 };
 
-const comparePassword = (password, hashpassword) => {
-  const hashPass = hashPassword(password);
-  return hashPass === hashpassword;
+
+const comparePassword = (plainPassword, hashedPassword) => {
+  const hash = hashPassword(plainPassword);
+  return hash === hashedPassword;
 };
 
 module.exports = { hashPassword, comparePassword };
+
