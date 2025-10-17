@@ -1,10 +1,19 @@
 const UserModel = require("../models/userModels");
+const { hashPassword, comparePassword } = require("../utils/encryptPassword");  
+
 
 const SignupController = async (req, res) => {
   try {
     const { name, email, password } = req.body;
+    const file = req.file
+    console.log("Uploaded file:", req.file);
 
+    let avatarUrl = ''
+    if (file) {
+      avatarUrl= `/uploads/${file.originalname}`
+    }
 
+    
     if (!name || !email || !password) {
       return res.status(400).json({ message: "All fields are required" });
     }
@@ -20,19 +29,20 @@ const SignupController = async (req, res) => {
         .json({ message: "Password must be at least 6 characters long" });
     }
 
-  
+    
     const exist = await UserModel.findOne({ email });
     if (exist) {
       return res.status(400).json({ message: "User already exists" });
     }
 
- 
-    const user = new UserModel({ name, email, password });
+    const hashedPass = hashPassword(password);
+
+  
+    const user = new UserModel({ name, email, password: hashedPass , avatar:avatarUrl });
     await user.save();
 
     res.status(201).json({ message: "Signup successful", user });
   } catch (err) {
-    console.error(err);
     res.status(500).json({ error: "Internal Server Error", details: err.message });
   }
 };
@@ -44,9 +54,8 @@ const LoginController = async (req, res) => {
 
     if (!email || !password) {
       return res.status(400).json({ message: "Email and password are required" });
-    } 
-  
- 
+    }
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return res.status(400).json({ message: "Invalid email format" });
@@ -69,10 +78,63 @@ const LoginController = async (req, res) => {
       user: { name: user.name, email: user.email },
     });
   } catch (err) {
-    console.error(err);
     res.status(500).json({ error: "Internal Server Error", details: err.message });
   }
 };
 
-module.exports = { SignupController, LoginController };
+const getAllUsers = async(req, res) => {
+  try{
+    const users = await UserModel.find().select("-password");
+    res.status(200).json(users);
+  }catch (err) {
+    res.status(500).json({error: "internal Server Error", details: err.message});
+  }
+};
 
+const getUserById =async(req, res) => {
+  try{
+  const user = await UserModel.findById(req.params.id).select("-password");
+  if(!user){
+    return res.status(404).json({message: "user not found"});
+  }
+  res.status(200).json(user);
+}catch (err) {
+  res.status(500) .json({error: "Internal Server Error", details: err.message});
+}
+};
+
+const updateUser = async (req, res) => {
+  try {
+    const { name, email } = req.body;
+
+    const updatedUser = await UserModel.findByIdAndUpdate(
+      req.params.id,
+      { name, email },
+      { new: true }
+    ).select("-password"); 
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json({ message: "User updated", user: updatedUser });
+
+  } catch (err) {
+    res.status(500).json({ error: "Internal Server Error", details: err.message });
+  }
+};
+
+const deleteUser = async (req, res) => {
+  try {
+    const deletedUser = await UserModel.findByIdAndDelete(req.params.id);
+    if (!deletedUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.status(200).json({ message: "User deleted" });
+  } catch (err) {
+    res.status(500).json({ error: "Internal Server Error", details: err.message });
+  }
+};
+
+
+module.exports = { SignupController, LoginController, getAllUsers, getUserById, updateUser , deleteUser};
