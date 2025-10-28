@@ -1,4 +1,5 @@
 const Contact = require("../models/contactModel");
+const UserModel = require("../models/userModels");
 
 const submitContact = async (req, res) => {
   try {
@@ -31,4 +32,50 @@ const submitContact = async (req, res) => {
   }
 };
 
-module.exports = { submitContact };
+const getAllContacts = async (req, res)  => {
+  try{
+     const contacts = await Contact.find();
+     res.status(200).json(contacts);
+  }catch (err) {
+    res.status(500).json({ error: "Failed to catch Error", details: err.message});
+  }
+};
+
+const getContactId = async (req, res) => {
+    try{
+      const contact = await Contact.findById(req.params.id);
+      if (!contact) return res.status(404).json({error: "Contact not Found",});
+      res.status(400).json(contact);
+
+    }catch (err){
+      res.status(500).json({ error: "Fetching Error Contact", details: err.message });
+    }
+
+
+};
+
+const updateContact = async (req, res) => {
+  try{
+    const contact = await Contact.findByIdAndUpdate(req.params.id, req.body,{
+      new: true,
+      ruleValidators: true,
+    });
+
+    if (!updated) return res.status(404).json({message: "Contact not found"});
+    res.staus(200).json({message: "Contact updated successfully", updated });
+  }catch (err){
+    res.status(500).json({error: "Error Updating Contact", details: err.message });
+  }
+};
+
+const deleteContact = async (req, res) => {
+  try {
+    const deleted = await Contact.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).json({ message: "Contact not found" });
+    res.status(200).json({ message: "Contact deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ error: "Error deleting contact", details: err.message });
+  }
+};
+
+module.exports = { submitContact, getAllContacts, updateContact,deleteContact,getContactId };
