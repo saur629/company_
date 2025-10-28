@@ -3,6 +3,7 @@ require("./connection");
 const path = require('path')
 const ApiRoutes = require("./routes/app");
 const contactRoutes = require("./routes/contactRoutes");
+const { transporter } = require("./service/mailService");
 
 const app = express();
 const PORT = 7000;
