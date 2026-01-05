@@ -1,19 +1,21 @@
 const UserModel = require("../models/userModels");
-const { hashPassword, comparePassword } = require("../utils/encryptPassword");  
+const { transporter } = require("../service/mailService");
+const { hashPassword, comparePassword } = require("../utils/encryptPassword");
+const { sendEmail } = require("../service/mailService");
+
 
 
 const SignupController = async (req, res) => {
   try {
     const { name, email, password } = req.body;
-    const file = req.file
+    const file = req.file;
     console.log("Uploaded file:", req.file);
 
-    let avatarUrl = ''
+    let avatarUrl = "";
     if (file) {
-      avatarUrl= `/uploads/${file.originalname}`
+      avatarUrl = `/uploads/${file.originalname}`;
     }
 
-    
     if (!name || !email || !password) {
       return res.status(400).json({ message: "All fields are required" });
     }
@@ -29,7 +31,6 @@ const SignupController = async (req, res) => {
         .json({ message: "Password must be at least 6 characters long" });
     }
 
-    
     const exist = await UserModel.findOne({ email });
     if (exist) {
       return res.status(400).json({ message: "User already exists" });
@@ -37,23 +38,39 @@ const SignupController = async (req, res) => {
 
     const hashedPass = hashPassword(password);
 
-  
-    const user = new UserModel({ name, email, password: hashedPass , avatar:avatarUrl });
+    const user = new UserModel({
+      name,
+      email,
+      password: hashedPass,
+      avatar: avatarUrl,
+    });
     await user.save();
+
+    await transporter.sendMail({
+      from: "ssy860471@gmail.com",
+      to: "ssy860471@gmail.com",
+      cc:user.email,
+      subject: `New User : ${user.name} `,
+      text: `hello A new user registered - ${user.name}`,
+       
+    });
 
     res.status(201).json({ message: "Signup successful", user });
   } catch (err) {
-    res.status(500).json({ error: "Internal Server Error", details: err.message });
+    res
+      .status(500)
+      .json({ error: "Internal Server Error", details: err.message });
   }
 };
-
 
 const LoginController = async (req, res) => {
   try {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({ message: "Email and password are required" });
+      return res
+        .status(400)
+        .json({ message: "Email and password are required" });
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -61,12 +78,10 @@ const LoginController = async (req, res) => {
       return res.status(400).json({ message: "Invalid email format" });
     }
 
-
     const user = await UserModel.findOne({ email });
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-
 
     const isValid = comparePassword(password, user.password);
     if (!isValid) {
@@ -78,29 +93,35 @@ const LoginController = async (req, res) => {
       user: { name: user.name, email: user.email },
     });
   } catch (err) {
-    res.status(500).json({ error: "Internal Server Error", details: err.message });
+    res
+      .status(500)
+      .json({ error: "Internal Server Error", details: err.message });
   }
 };
 
-const getAllUsers = async(req, res) => {
-  try{
+const getAllUsers = async (req, res) => {
+  try {
     const users = await UserModel.find().select("-password");
     res.status(200).json(users);
-  }catch (err) {
-    res.status(500).json({error: "internal Server Error", details: err.message});
+  } catch (err) {
+    res
+      .status(500)
+      .json({ error: "internal Server Error", details: err.message });
   }
 };
 
-const getUserById =async(req, res) => {
-  try{
-  const user = await UserModel.findById(req.params.id).select("-password");
-  if(!user){
-    return res.status(404).json({message: "user not found"});
+const getUserById = async (req, res) => {
+  try {
+    const user = await UserModel.findById(req.params.id).select("-password");
+    if (!user) {
+      return res.status(404).json({ message: "user not found" });
+    }
+    res.status(200).json(user);
+  } catch (err) {
+    res
+      .status(500)
+      .json({ error: "Internal Server Error", details: err.message });
   }
-  res.status(200).json(user);
-}catch (err) {
-  res.status(500) .json({error: "Internal Server Error", details: err.message});
-}
 };
 
 const updateUser = async (req, res) => {
@@ -111,16 +132,17 @@ const updateUser = async (req, res) => {
       req.params.id,
       { name, email },
       { new: true }
-    ).select("-password"); 
+    ).select("-password");
 
     if (!updatedUser) {
       return res.status(404).json({ message: "User not found" });
     }
 
     res.status(200).json({ message: "User updated", user: updatedUser });
-
   } catch (err) {
-    res.status(500).json({ error: "Internal Server Error", details: err.message });
+    res
+      .status(500)
+      .json({ error: "Internal Server Error", details: err.message });
   }
 };
 
@@ -132,9 +154,17 @@ const deleteUser = async (req, res) => {
     }
     res.status(200).json({ message: "User deleted" });
   } catch (err) {
-    res.status(500).json({ error: "Internal Server Error", details: err.message });
+    res
+      .status(500)
+      .json({ error: "Internal Server Error", details: err.message });
   }
 };
 
-
-module.exports = { SignupController, LoginController, getAllUsers, getUserById, updateUser , deleteUser};
+module.exports = {
+  SignupController,
+  LoginController,
+  getAllUsers,
+  getUserById,
+  updateUser,
+  deleteUser,
+};
