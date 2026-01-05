@@ -8,7 +8,9 @@ const {
   deleteUser,
 } = require("../controllers/userControllers");
 const upload = require("../functions/mediaFunc");
-const transporter = require("../service/mailService");
+
+
+
 
 
 const router = express.Router();

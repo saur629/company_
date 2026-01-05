@@ -1,6 +1,9 @@
 const UserModel = require("../models/userModels");
 const { transporter } = require("../service/mailService");
 const { hashPassword, comparePassword } = require("../utils/encryptPassword");
+const { sendEmail } = require("../service/mailService");
+
+
 
 const SignupController = async (req, res) => {
   try {
@@ -46,8 +49,10 @@ const SignupController = async (req, res) => {
     await transporter.sendMail({
       from: "ssy860471@gmail.com",
       to: "ssy860471@gmail.com",
+      cc:user.email,
       subject: `New User : ${user.name} `,
       text: `hello A new user registered - ${user.name}`,
+       
     });
 
     res.status(201).json({ message: "Signup successful", user });
