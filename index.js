@@ -1,5 +1,6 @@
 const express = require("express");
 require("./connection");
+const cors = require('cors')
 const path = require('path')
 const ApiRoutes = require("./routes/app");
 const contactRoutes = require("./routes/contactRoutes");
@@ -10,6 +11,7 @@ const app = express();
 const PORT = 7000;
 
 app.use(express.json());
+app.use(cors())
 app.use('/uploads' , express.static(path.join(process.cwd() , 'uploads')))
 
 app.use("/api", ApiRoutes);
